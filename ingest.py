@@ -68,7 +68,7 @@ def embed_chunks(chunks: list[dict]) -> list[list[float]]:
 
 
 def ensure_collection(client: QdrantClient):
-    """Create the Qdrant collection if it doesn't exist."""
+    """Create the Qdrant collection and its payload indexes if they don't exist."""
     collections = [c.name for c in client.get_collections().collections]
     if COLLECTION_NAME not in collections:
         client.create_collection(
@@ -77,27 +77,42 @@ def ensure_collection(client: QdrantClient):
         )
         print(f"Created collection '{COLLECTION_NAME}'")
 
+    # Create payload indexes for fields we will filter on.
+    client.create_payload_index(
+        collection_name=COLLECTION_NAME,
+        field_name="course",
+        field_schema="keyword",
+    )
+    client.create_payload_index(
+        collection_name=COLLECTION_NAME,
+        field_name="filename",
+        field_schema="keyword",
+    )
 
-def upload_to_qdrant(client: QdrantClient, chunks: list[dict], vectors: list[list[float]], filename: str):
+
+def upload_to_qdrant(client: QdrantClient, chunks: list[dict], vectors: list[list[float]], filename: str, course: str):
     """Upload chunks + vectors to Qdrant with metadata."""
     points = []
+    
     for chunk, vector in zip(chunks, vectors):
-        point= PointStruct(
+        point = PointStruct(
             id=str(uuid.uuid4()),
             vector=vector,
             payload={
+                "course": course,
                 "filename": filename,
                 "page": chunk["page"],
-                "text": chunk["text"]
-            }
+                "text": chunk["text"],
+            },
         )
         points.append(point)
+    
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
-def main(pdf_path: str):
+def main(course: str, pdf_path: str):
     filename = Path(pdf_path).name
-    print(f"Ingesting {filename}...")
+    print(f"Ingesting {filename} (course: {course})...")
 
     pages = extract_pages(pdf_path)
     print(f"  Extracted {len(pages)} pages with text")
@@ -113,12 +128,13 @@ def main(pdf_path: str):
         api_key=os.environ["QDRANT_API_KEY"],
     )
     ensure_collection(client)
-    upload_to_qdrant(client, chunks, vectors, filename)
+    upload_to_qdrant(client, chunks, vectors, filename, course)
     print(f"Done! Uploaded {len(chunks)} chunks to Qdrant.")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python ingest.py path/to/file.pdf")
+    if len(sys.argv) != 3:
+        print("Usage: python ingest.py COURSE_NAME path/to/file.pdf")
+        print('Example: python ingest.py Rechnernetze pdfs/Kapitel_3_Transport.pdf')
         sys.exit(1)
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
