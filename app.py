@@ -15,16 +15,126 @@ load_dotenv()
 # --- Page config ---
 st.set_page_config(
     page_title="LectureRAG",
+    page_icon="📚",
     layout="wide",
 )
 
-# --- Title and intro ---
-st.title("LectureRAG")
-st.caption("Ask questions about your lecture notes and get answers with cited sources.")
-st.caption(
-    "First query takes ~30 seconds while the embedding model loads. "
-    "Subsequent queries are fast."
-)
+# --- Custom CSS for spacing and hero ---
+st.markdown("""
+<style>
+
+    /* Override focus ring on inputs to match accent color */
+    .stTextInput > div > div > input:focus,
+    .stTextInput > div[data-baseweb="input"]:focus-within {
+        border-color: #7CB7FF !important;
+        box-shadow: 0 0 0 1px #7CB7FF !important;
+    }
+    .stTextInput > div[data-baseweb="input"] {
+        border-color: #2a2f3a;
+    }
+
+    /* Override focus ring on selectbox to match accent color */
+    .stSelectbox > div[data-baseweb="select"]:focus-within > div {
+        border-color: #7CB7FF !important;
+        box-shadow: 0 0 0 1px #7CB7FF !important;
+    }
+    .stSelectbox > div[data-baseweb="select"] > div {
+        border-color: #2a2f3a;
+    }
+
+    /* Tighten the top padding */
+    .block-container {
+        padding-top: 3rem;
+        max-width: 920px;
+    }
+
+    /* Hero header */
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.25rem;
+    }
+    .hero-subtitle {
+        font-size: 1.05rem;
+        color: #9aa0a6;
+        margin-bottom: 0.5rem;
+        font-weight: 400;
+    }
+    .hero-meta {
+        font-size: 0.85rem;
+        color: #6c7280;
+        margin-bottom: 2rem;
+    }
+    .hero-accent {
+        width: 48px;
+        height: 3px;
+        background: linear-gradient(90deg, #7CB7FF 0%, #5B8BD9 100%);
+        border-radius: 2px;
+        margin: 0.5rem 0 1rem 0;
+    }
+
+    /* Section labels */
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9aa0a6;
+        margin: 1.5rem 0 0.5rem 0;
+    }
+
+    /* Tighter sidebar */
+    [data-testid="stSidebar"] .stMarkdown h2 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9aa0a6;
+        margin-bottom: 0.5rem;
+    }
+    [data-testid="stSidebar"] {
+        padding-top: 2rem;
+    }
+
+    /* Example buttons */
+    .stButton > button {
+        background-color: transparent;
+        border: 1px solid #2a2f3a;
+        border-radius: 8px;
+        color: #c0c4cc;
+        font-weight: 400;
+        font-size: 0.9rem;
+        padding: 0.6rem 0.9rem;
+        transition: all 0.15s ease;
+    }
+    .stButton > button:hover {
+        border-color: #7CB7FF;
+        color: #ffffff;
+        background-color: rgba(124, 183, 255, 0.05);
+    }
+    /* Primary (Ask) button override */
+    .stButton > button[kind="primary"] {
+        background-color: #7CB7FF;
+        color: #0E1117;
+        border: none;
+        font-weight: 600;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #5B8BD9;
+        color: #ffffff;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# --- Hero header ---
+st.markdown("""
+<div class="hero-title">📚 LectureRAG</div>
+<div class="hero-accent"></div>
+<div class="hero-subtitle">Ask questions about your lecture notes — get answers grounded in cited sources.</div>
+<div class="hero-meta">First query takes ~30s while the embedding model loads · Built with Python, Qdrant, fastembed, Gemini</div>
+""", unsafe_allow_html=True)
 
 
 # --- Helper to load list of courses from Qdrant ---
@@ -53,38 +163,48 @@ def get_courses() -> list[str]:
     return sorted(courses)
 
 
-# --- Sidebar: course filter ---
+# --- Sidebar ---
 with st.sidebar:
-    st.header("Filters")
+    st.markdown("## Filters")
     available_courses = get_courses()
     options = ["(all courses)"] + available_courses
-    selected = st.selectbox("Course", options, index=0)
+    selected = st.selectbox(
+        "Course",
+        options,
+        index=0,
+        label_visibility="collapsed",
+    )
     course_filter = None if selected == "(all courses)" else selected
+    st.caption(f"{len(available_courses)} course(s) available")
 
-    st.divider()
-    st.markdown("**About**")
-    st.caption("Built with Python, Qdrant, fastembed, and Google Gemini.")
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("## About")
+    st.caption(
+        "A retrieval-augmented Q&A app for university lecture notes. "
+        "Built with Python, Qdrant, fastembed, and Google Gemini."
+    )
+    st.markdown(
+        "[View on GitHub →](https://github.com/julienlmu/lecturerag)",
+        unsafe_allow_html=True,
+    )
 
 
-# --- Main: question input + answer ---
-
+# --- Example questions ---
 EXAMPLE_QUESTIONS = [
     "Was ist das TCP Drei-Wege-Handshake?",
     "Was ist eine Zufallsvariable?",
     "Welche OSI-Schichten gibt es?",
 ]
 
-# Initialize the input field's session state (only once)
 if "question" not in st.session_state:
     st.session_state["question"] = ""
 
 
-# Callback that fills the input when a button is clicked
 def set_question(text: str):
     st.session_state["question"] = text
 
 
-st.caption("Try one of these examples, or ask your own:")
+st.markdown('<div class="section-label">Examples</div>', unsafe_allow_html=True)
 example_cols = st.columns(3)
 for col, example in zip(example_cols, EXAMPLE_QUESTIONS):
     col.button(
@@ -94,29 +214,32 @@ for col, example in zip(example_cols, EXAMPLE_QUESTIONS):
         args=(example,),
     )
 
+
+# --- Question input ---
+st.markdown('<div class="section-label">Your question</div>', unsafe_allow_html=True)
 question = st.text_input(
     "Your question",
-    placeholder="e.g. Was ist das TCP Drei-Wege-Handshake?",
+    placeholder="Type a question about your lecture notes...",
     key="question",
+    label_visibility="collapsed",
 )
 
+ask_clicked = st.button("Ask", type="primary", use_container_width=False)
+
+
 # --- Handle the Ask button click ---
-if st.button("Ask", type="primary") and question:
+if ask_clicked and question:
     with st.spinner("Searching your notes..."):
-        # 1. Embed the question
         query_vector = embed_query(question)
 
-        # 2. Search Qdrant
         qdrant = QdrantClient(
             url=os.environ["QDRANT_URL"],
             api_key=os.environ["QDRANT_API_KEY"],
         )
         sources = search_chunks(qdrant, query_vector, course=course_filter)
 
-        # 3. Build the prompt
         prompt = build_prompt(question, sources)
 
-        # 4. Call Gemini (with graceful error handling)
         gemini = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
         try:
             response = gemini.models.generate_content(
@@ -141,16 +264,14 @@ if st.button("Ask", type="primary") and question:
             st.warning(msg)
             st.stop()
 
-    # --- Display answer ---
-    st.markdown("### Answer")
+    st.markdown('<div class="section-label">Answer</div>', unsafe_allow_html=True)
     st.write(answer)
 
-    # --- Display sources ---
     if sources:
-        st.markdown("### Sources")
+        st.markdown('<div class="section-label">Sources</div>', unsafe_allow_html=True)
         for i, src in enumerate(sources, 1):
             with st.expander(
-                f"[{i}] {src['filename']} — page {src['page']} "
-                f"({src['course']}, score {src['score']:.3f})"
+                f"[{i}]  {src['filename']} · page {src['page']} · "
+                f"{src['course']} · score {src['score']:.3f}"
             ):
                 st.write(src["text"])
