@@ -8,7 +8,7 @@ A Q&A app for asking questions about university lecture notes. Built with Python
 
 - [x] PDF ingestion pipeline (chunking, embeddings, vector DB)
 - [x] Query and answer generation
-- [ ] Streamlit UI
+- [x] Streamlit UI
 - [ ] Deployment
 
 ## Tech stack
