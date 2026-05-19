@@ -15,13 +15,16 @@ load_dotenv()
 # --- Page config ---
 st.set_page_config(
     page_title="LectureRAG",
-    page_icon="📚",
     layout="wide",
 )
 
 # --- Title and intro ---
-st.title("📚 LectureRAG")
+st.title("LectureRAG")
 st.caption("Ask questions about your lecture notes and get answers with cited sources.")
+st.caption(
+    "First query takes ~30 seconds while the embedding model loads. "
+    "Subsequent queries are fast."
+)
 
 
 # --- Helper to load list of courses from Qdrant ---
@@ -49,6 +52,7 @@ def get_courses() -> list[str]:
             break
     return sorted(courses)
 
+
 # --- Sidebar: course filter ---
 with st.sidebar:
     st.header("Filters")
@@ -56,18 +60,47 @@ with st.sidebar:
     options = ["(all courses)"] + available_courses
     selected = st.selectbox("Course", options, index=0)
     course_filter = None if selected == "(all courses)" else selected
-    
+
     st.divider()
     st.markdown("**About**")
     st.caption("Built with Python, Qdrant, fastembed, and Google Gemini.")
 
 
 # --- Main: question input + answer ---
+
+EXAMPLE_QUESTIONS = [
+    "Was ist das TCP Drei-Wege-Handshake?",
+    "Was ist eine Zufallsvariable?",
+    "Welche OSI-Schichten gibt es?",
+]
+
+# Initialize the input field's session state (only once)
+if "question" not in st.session_state:
+    st.session_state["question"] = ""
+
+
+# Callback that fills the input when a button is clicked
+def set_question(text: str):
+    st.session_state["question"] = text
+
+
+st.caption("Try one of these examples, or ask your own:")
+example_cols = st.columns(3)
+for col, example in zip(example_cols, EXAMPLE_QUESTIONS):
+    col.button(
+        example,
+        use_container_width=True,
+        on_click=set_question,
+        args=(example,),
+    )
+
 question = st.text_input(
     "Your question",
     placeholder="e.g. Was ist das TCP Drei-Wege-Handshake?",
+    key="question",
 )
 
+# --- Handle the Ask button click ---
 if st.button("Ask", type="primary") and question:
     with st.spinner("Searching your notes..."):
         # 1. Embed the question
@@ -83,13 +116,30 @@ if st.button("Ask", type="primary") and question:
         # 3. Build the prompt
         prompt = build_prompt(question, sources)
 
-        # 4. Call Gemini
+        # 4. Call Gemini (with graceful error handling)
         gemini = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-        response = gemini.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-        )
-        answer = response.text
+        try:
+            response = gemini.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
+            answer = response.text
+        except Exception as e:
+            error_type = type(e).__name__
+            if "ServerError" in error_type or "503" in str(e) or "500" in str(e):
+                msg = (
+                    "The language model is temporarily unavailable "
+                    "(likely a rate limit on the free tier). Please wait ~30 seconds and try again."
+                )
+            elif "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                msg = (
+                    "Rate limit reached on the free tier. "
+                    "Please wait a minute before asking another question."
+                )
+            else:
+                msg = f"Something went wrong calling the language model: {error_type}."
+            st.warning(msg)
+            st.stop()
 
     # --- Display answer ---
     st.markdown("### Answer")

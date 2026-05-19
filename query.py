@@ -11,6 +11,9 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from google import genai
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="fastembed")
+
 load_dotenv()
 
 COLLECTION_NAME = "lecture_chunks"
