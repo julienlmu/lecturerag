@@ -2,6 +2,8 @@
 
 A Q&A app for asking questions about university lecture notes. Built with Python, Qdrant, and Google Gemini.
 
+🔗 **Live demo:** https://lecturerag-eptovhywnagwcyaguvnkx3.streamlit.app
+
 🚧 Work in progress — first real project to learn RAG (Retrieval-Augmented Generation) end-to-end.
 
 ## Status
