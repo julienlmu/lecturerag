@@ -28,35 +28,26 @@ st.caption("Ask questions about your lecture notes and get answers with cited so
 @st.cache_data(ttl=60)
 def get_courses() -> list[str]:
     """Fetch the unique courses present in Qdrant."""
-    import sys
-    
-    # Debug: show whether secrets are loaded
-    url = os.environ.get("QDRANT_URL", "NOT SET")
-    key = os.environ.get("QDRANT_API_KEY", "NOT SET")
-    st.sidebar.caption(f"URL set: {url != 'NOT SET'} (length: {len(url)})")
-    st.sidebar.caption(f"Key set: {key != 'NOT SET'} (length: {len(key)})")
-    
-    try:
-        client = QdrantClient(url=url, api_key=key)
-        courses = set()
-        offset = None
-        while True:
-            points, offset = client.scroll(
-                collection_name="lecture_chunks",
-                limit=200,
-                offset=offset,
-                with_payload=["course"],
-                with_vectors=False,
-            )
-            for p in points:
-                if p.payload and "course" in p.payload:
-                    courses.add(p.payload["course"])
-            if offset is None:
-                break
-        return sorted(courses)
-    except Exception as e:
-        st.error(f"Qdrant error: {type(e).__name__}: {str(e)[:500]}")
-        st.stop()
+    client = QdrantClient(
+        url=os.environ["QDRANT_URL"],
+        api_key=os.environ["QDRANT_API_KEY"],
+    )
+    courses = set()
+    offset = None
+    while True:
+        points, offset = client.scroll(
+            collection_name="lecture_chunks",
+            limit=200,
+            offset=offset,
+            with_payload=["course"],
+            with_vectors=False,
+        )
+        for p in points:
+            if p.payload and "course" in p.payload:
+                courses.add(p.payload["course"])
+        if offset is None:
+            break
+    return sorted(courses)
 
 # --- Sidebar: course filter ---
 with st.sidebar:
