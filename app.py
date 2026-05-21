@@ -191,7 +191,7 @@ with st.sidebar:
 
 # --- Example questions ---
 EXAMPLE_QUESTIONS = [
-    "Was ist das TCP Drei-Wege-Handshake?",
+    "Was ist der TCP Drei-Wege-Handshake?",
     "Was ist eine Zufallsvariable?",
     "Welche OSI-Schichten gibt es?",
 ]
