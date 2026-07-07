@@ -54,6 +54,7 @@ def search_chunks(client: QdrantClient, query_vector: list[float], course: str |
             "filename": point.payload["filename"],
             "page": point.payload["page"],
             "text": point.payload["text"],
+            "pdf_url": point.payload.get("pdf_url", ""),
             "score": point.score,
         })
     return sources

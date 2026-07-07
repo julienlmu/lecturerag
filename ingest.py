@@ -20,6 +20,14 @@ COLLECTION_NAME = "lecture_chunks"
 EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" # 384 dimensions
 VECTOR_SIZE = 384
 
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+BUCKET = "lectures"
+
+
+def build_pdf_url(course: str, filename: str) -> str:
+    """Construct the public Supabase Storage URL for a PDF."""
+    return f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET}/{course}/{filename}"
+
 
 def extract_pages(pdf_path: str) -> list[tuple[int, str]]:
     """
@@ -92,8 +100,9 @@ def ensure_collection(client: QdrantClient):
 
 def upload_to_qdrant(client: QdrantClient, chunks: list[dict], vectors: list[list[float]], filename: str, course: str):
     """Upload chunks + vectors to Qdrant with metadata."""
+    pdf_url = build_pdf_url(course, filename)
     points = []
-    
+
     for chunk, vector in zip(chunks, vectors):
         point = PointStruct(
             id=str(uuid.uuid4()),
@@ -103,10 +112,11 @@ def upload_to_qdrant(client: QdrantClient, chunks: list[dict], vectors: list[lis
                 "filename": filename,
                 "page": chunk["page"],
                 "text": chunk["text"],
+                "pdf_url": pdf_url,
             },
         )
         points.append(point)
-    
+
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
@@ -138,3 +148,4 @@ if __name__ == "__main__":
         print('Example: python ingest.py Rechnernetze pdfs/Kapitel_3_Transport.pdf')
         sys.exit(1)
     main(sys.argv[1], sys.argv[2])
+    
