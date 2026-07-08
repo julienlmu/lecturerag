@@ -1,4 +1,6 @@
 streamlit
+streamlit-pdf-viewer
+requests
 pypdf
 langchain-text-splitters
 fastembed
