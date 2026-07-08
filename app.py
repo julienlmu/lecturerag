@@ -3,6 +3,8 @@ LectureRAG - Streamlit UI
 Run with: streamlit run app.py
 """
 import os
+import requests
+from streamlit_pdf_viewer import pdf_viewer
 from dotenv import load_dotenv
 import streamlit as st
 from qdrant_client import QdrantClient
@@ -23,20 +25,24 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-    /* Override focus ring on inputs to match accent color */
+/* Override focus ring on inputs to match accent color */
     .stTextInput > div > div > input:focus,
     .stTextInput > div[data-baseweb="input"]:focus-within {
         border-color: #7CB7FF !important;
         box-shadow: 0 0 0 1px #7CB7FF !important;
     }
     .stTextInput > div[data-baseweb="input"] {
-        border-color: #2a2f3a;
+        border-color: #2a2f3a !important;
     }
 
-    /* Override focus ring on selectbox to match accent color */
+    /* Override focus ring on selectbox */
     .stSelectbox > div[data-baseweb="select"]:focus-within > div {
         border-color: #7CB7FF !important;
         box-shadow: 0 0 0 1px #7CB7FF !important;
+    }
+    .stSelectbox > div[data-baseweb="select"] > div {
+        border-color: #2a2f3a !important;
+    }
     }
     .stSelectbox > div[data-baseweb="select"] > div {
         border-color: #2a2f3a;
@@ -138,6 +144,18 @@ st.markdown("""
 
 
 # --- Helper to load list of courses from Qdrant ---
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_pdf(url: str) -> bytes | None:
+    """Download a PDF from a URL and return its bytes. Cached for 1 hour."""
+    if not url:
+        return None
+    try:
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        return response.content
+    except Exception:
+        return None
+
 @st.cache_data(ttl=60)
 def get_courses() -> list[str]:
     """Fetch the unique courses present in Qdrant."""
@@ -251,7 +269,7 @@ if ask_clicked and question:
             error_type = type(e).__name__
             if "ServerError" in error_type or "503" in str(e) or "500" in str(e):
                 msg = (
-                    "The language model is temporarily unavailable "
+                    "The language model is temporarily unavailable " 
                     "(likely a rate limit on the free tier). Please wait ~30 seconds and try again."
                 )
             elif "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
@@ -275,3 +293,20 @@ if ask_clicked and question:
                 f"{src['course']} · score {src['score']:.3f}"
             ):
                 st.write(src["text"])
+
+                # Show the actual PDF page
+                pdf_url = src.get("pdf_url", "")
+                if pdf_url:
+                    with st.spinner("Loading page..."):
+                        pdf_bytes = fetch_pdf(pdf_url)
+                    if pdf_bytes:
+                        pdf_viewer(
+                            pdf_bytes,
+                            pages_to_render=[src["page"]],
+                            height=600,
+                            key=f"pdf_{i}",
+                        )
+                    else:
+                        st.caption("⚠️ Could not load the PDF for this source.")
+                else:
+                    st.caption("No PDF available for this source.")
