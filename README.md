@@ -45,7 +45,7 @@ The system has two pipelines: an offline ingestion pipeline and an online query 
 - Grounded answers with inline citations and honest "not found in your notes" behavior.
 - Inline PDF viewer: click a source to see the exact cited page rendered in the app.
 - Graceful handling of LLM rate limits and transient errors.
-- Clean, minimal UI with example questions.
+- Minimal UI with example questions.
 
 ## Running locally
 
