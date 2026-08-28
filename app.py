@@ -153,9 +153,7 @@ def fetch_pdf(url: str) -> bytes | None:
         response.raise_for_status()
         return response.content
     except Exception as e:
-        import traceback
-        print(f"FETCH_PDF ERROR for {url}: {type(e).__name__}: {e}")
-        traceback.print_exc()
+        print(f"fetch_pdf failed for {url}: {type(e).__name__}: {e}")
         return None
 
 @st.cache_data(ttl=60)
