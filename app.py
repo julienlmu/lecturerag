@@ -146,14 +146,16 @@ st.markdown("""
 # --- Helper to load list of courses from Qdrant ---
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_pdf(url: str) -> bytes | None:
-    """Download a PDF from a URL and return its bytes. Cached for 1 hour."""
     if not url:
         return None
     try:
         response = requests.get(url, timeout=15)
         response.raise_for_status()
         return response.content
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"FETCH_PDF ERROR for {url}: {type(e).__name__}: {e}")
+        traceback.print_exc()
         return None
 
 @st.cache_data(ttl=60)
@@ -216,8 +218,7 @@ EXAMPLE_QUESTIONS = [
 
 if "question" not in st.session_state:
     st.session_state["question"] = ""
-
-
+    
 def set_question(text: str):
     st.session_state["question"] = text
 
