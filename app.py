@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import streamlit as st
 from qdrant_client import QdrantClient
 
-from query import embed_query, search_chunks, build_prompt
+from query import embed_query, search_chunks, build_prompt, rerank, RERANK_CANDIDATES
 from google import genai
 
 load_dotenv()
@@ -253,7 +253,8 @@ if ask_clicked and question:
             url=os.environ["QDRANT_URL"],
             api_key=os.environ["QDRANT_API_KEY"],
         )
-        sources = search_chunks(qdrant, query_vector, course=course_filter)
+        candidates = search_chunks(qdrant, query_vector, course= course_filter, limit=RERANK_CANDIDATES)
+        sources = rerank(question, candidates)
 
         prompt = build_prompt(question, sources)
 

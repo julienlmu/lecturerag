@@ -1,0 +1,24 @@
+# eval/check_embeddings.py
+import os, sys
+from pathlib import Path
+import numpy as np
+from dotenv import load_dotenv
+from fastembed import TextEmbedding
+from qdrant_client import QdrantClient
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from query import COLLECTION_NAME, EMBED_MODEL
+
+load_dotenv(ROOT / ".env")
+client = QdrantClient(url=os.environ["QDRANT_URL"], api_key=os.environ["QDRANT_API_KEY"])
+
+points, _ = client.scroll(COLLECTION_NAME, limit=20, with_payload=["text", "filename"], with_vectors=True)
+embedder = TextEmbedding(model_name=EMBED_MODEL)
+fresh = list(embedder.embed([p.payload["text"] for p in points]))
+
+sims = []
+for p, v in zip(points, fresh):
+    stored = np.array(p.vector)
+    sims.append(float(np.dot(stored, v) / (np.linalg.norm(stored) * np.linalg.norm(v))))
+print(f"Kosinus gespeichert vs. neu: min {min(sims):.4f} | mittel {np.mean(sims):.4f}")

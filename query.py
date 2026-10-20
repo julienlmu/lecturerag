@@ -7,6 +7,7 @@ import sys
 from dotenv import load_dotenv
 
 from fastembed import TextEmbedding
+from fastembed.rerank.cross_encoder import TextCrossEncoder
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from google import genai
@@ -18,7 +19,11 @@ load_dotenv()
 
 COLLECTION_NAME = "lecture_chunks"
 EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-TOP_K = 5  # how many chunks to retrieve
+TOP_K = 5  # how many chunks go into the prompt
+RERANK_MODEL = "jinaai/jina-reranker-v2-base-multilingual"  # German + English
+RERANK_CANDIDATES = 20  # how many chunks the vector search hands to the reranker
+
+_reranker: TextCrossEncoder | None = None
 
 
 def embed_query(question: str) -> list[float]:
@@ -28,7 +33,12 @@ def embed_query(question: str) -> list[float]:
     return vectors[0].tolist()
 
 
-def search_chunks(client: QdrantClient, query_vector: list[float], course: str | None = None) -> list[dict]:
+def search_chunks(
+    client: QdrantClient,
+    query_vector: list[float],
+    course: str | None = None,
+    limit: int = TOP_K,
+) -> list[dict]:
     """
     Search Qdrant for the most similar chunks.
     If course is given, only return chunks from that course.
@@ -43,7 +53,7 @@ def search_chunks(client: QdrantClient, query_vector: list[float], course: str |
     result = client.query_points(
         collection_name=COLLECTION_NAME,
         query=query_vector,
-        limit=TOP_K,
+        limit=limit,
         query_filter=query_filter,
     )
     
@@ -58,6 +68,28 @@ def search_chunks(client: QdrantClient, query_vector: list[float], course: str |
             "score": point.score,
         })
     return sources
+
+
+def get_reranker() -> TextCrossEncoder:
+    """Load the reranker once per process (it is ~1 GB)."""
+    global _reranker
+    if _reranker is None:
+        _reranker = TextCrossEncoder(model_name=RERANK_MODEL)
+    return _reranker
+
+
+def rerank(question: str, sources: list[dict], top_k: int = TOP_K) -> list[dict]:
+    """
+    Re-score candidates with a cross-encoder, which reads question and chunk together.
+    Slower than vector search, so it only runs on the top RERANK_CANDIDATES chunks.
+    Adds a "rerank_score" key and returns the top_k best.
+    """
+    if not sources:
+        return sources
+    scores = list(get_reranker().rerank(question, [s["text"] for s in sources]))
+    for src, score in zip(sources, scores):
+        src["rerank_score"] = float(score)
+    return sorted(sources, key=lambda s: s["rerank_score"], reverse=True)[:top_k]
 
 
 def build_prompt(question: str, sources: list[dict]) -> str:
@@ -103,7 +135,8 @@ def answer_question(question: str, course: str | None = None) -> tuple[str, list
         url=os.environ["QDRANT_URL"],
         api_key=os.environ["QDRANT_API_KEY"],
     )
-    sources = search_chunks(qdrant, query_vector, course=course)
+    candidates = search_chunks(qdrant, query_vector, course=course, limit=RERANK_CANDIDATES)
+    sources = rerank(question, candidates)
 
     prompt = build_prompt(question, sources)
 
@@ -140,4 +173,3 @@ if __name__ == "__main__":
     question = sys.argv[1]
     course = sys.argv[2] if len(sys.argv) == 3 else None
     main(question, course)
-   

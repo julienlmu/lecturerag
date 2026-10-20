@@ -1,0 +1,48 @@
+question,course,relevant,type,lang,kind
+Warum heißt das Skip-gram-Modell eigentlich Skip-gram?,CLA,cla26_w8_01_word2vec_Skipgram.pdf:14,in,de,paraphrase
+How are the negative examples generated when training skip-gram with negative sampling?,CLA,"cla26_w8_01_word2vec_Skipgram.pdf:20,40",in,en,paraphrase
+"Wie kann fastText einen Vektor für ein Wort erzeugen, das im Training nie vorkam?",CLA,"cla26_w8_03_fastText.pdf:2,12",in,de,paraphrase
+Which training points actually decide where an SVM puts its decision boundary?,CLA,"cla26_w4_03_SVM.pdf:11,16",in,en,paraphrase
+"Was passiert mit der Margin, wenn ich den Hyperparameter C bei der SVM groß wähle?",CLA,cla26_w4_03_SVM.pdf:13,in,de,paraphrase
+Why do deep networks with sigmoid activations stop learning?,CLA,cla26_w11_01_NN.pdf:15,in,en,paraphrase
+"Wie ändert der Perzeptron-Algorithmus die Gewichte, wenn ein Beispiel falsch klassifiziert wurde?",CLA,"cla26_w1_04_perceptron.pdf:34,35",in,de,paraphrase
+When should I use t-SNE instead of PCA to visualize word embeddings?,CLA,cla26_w8_02_visualization.pdf:10,in,en,paraphrase
+Was macht das Forget Gate in einem LSTM?,CLA,cla26_w11_02_RNN.pdf:21,in,de,term
+Bis wann muss man die Moodle-Aufgaben in CLA abgeben?,CLA,cla26_w1_01_organizational.pdf:7,in,de,fact
+How is n-gram overlap different from plain word overlap for detecting paraphrases?,CLA,cla26_w2_01_paraphrasing.pdf:18,in,en,paraphrase
+"Wie berechnet man, wie ähnlich sich zwei Wortvektoren sind?",CLA,"cla26_w5_01_SemanticSpace.pdf:35,37,38,39|cla26_w2_01_paraphrasing.pdf:33",in,de,paraphrase
+Was ist SGNS?,CLA,"cla26_w8_01_word2vec_Skipgram.pdf:10,16,20,21|cla26_w7_01_SVD.pdf:64|cla26_w8_03_fastText.pdf:2",in,de,abbrev
+Welche Laufzeit hat der CYK-Algorithmus?,FSK,"vl-06b-ft-der-cyk-algorithmus-2.pdf:13|skript-4.pdf:76,103",in,de,term
+Is the Ackermann function primitive recursive?,FSK,"vl-09b-f-die-ackermannfunktion.pdf:17|skript-4.pdf:138,142",in,en,paraphrase
+Was besagt der Satz von Rice?,FSK,vl-10b-ft-reduktion-und-der-satz-von-rice.pdf:10|skript-4.pdf:148,in,de,term
+How is the special halting problem K defined?,FSK,vl-10a-ft-unentscheidbarkeit-und-das-spezielle-halteproblem.pdf:12|skript-4.pdf:145,in,en,paraphrase
+"Woran erkennt man laut Myhill-Nerode, ob eine Sprache regulär ist?",FSK,vl-05a-f-der-satz-von-myhill-und-nerode-2.pdf:7|skript-4.pdf:51|zue-04-minimierung-cyk-myhill-nerode.pdf:17,in,de,paraphrase
+Wie macht man aus einem NFA einen DFA?,FSK,"vl-03b-ft-determinisierung-von-endlichen-automaten.pdf:6,8|skript-4.pdf:37",in,de,paraphrase
+How many states can the DFA end up with after determinizing an NFA with n states?,FSK,"vl-03b-ft-determinisierung-von-endlichen-automaten.pdf:13,14|skript-4.pdf:38,39",in,en,paraphrase
+Welche Form müssen die Regeln einer Grammatik in Chomsky-Normalform haben?,FSK,vl-05b-f-die-chomsky-normalform-2.pdf:6|vl-06b-ft-der-cyk-algorithmus-2.pdf:4|skript-4.pdf:61,in,de,paraphrase
+What is the formal definition of a pushdown automaton?,FSK,vl-06c-ft-kellerautomaten-3.pdf:6|skript-4.pdf:78,in,en,paraphrase
+Wie ist die Komplexitätsklasse NP definiert?,FSK,vl-11a-ft-laufzeitkomplexitaet-und-die-klassen-p-und-np-3.pdf:13|vl-11c-ft-np-vollstaendigkeit.pdf:3|skript-4.pdf:161,in,de,term
+Which problem was the first one proven NP-complete by Cook?,FSK,"vl-12a-ft-np-vollstaendigkeit-von-sat.pdf:21|skript-4.pdf:165,169",in,en,paraphrase
+Was ist das PCP?,FSK,"vl-10c-ft-das-postsche-korrespondenzproblem.pdf:3,4|skript-4.pdf:149,150",in,de,abbrev
+Welche Bedingung müssen die Regeln einer Typ-3-Grammatik erfüllen?,FSK,vl-01b-ft-grammatiken-und-die-chomsky-hierarchie.pdf:18|skript-4.pdf:21|vl-01c-ft-weitere-grammatikbegriffe-sowie-eigenschaften-von-sprachen.pdf:4,in,de,term
+Wann darf man die Binomialverteilung durch eine Poisson-Verteilung annähern?,StoSta,slides2.pdf:39|Stochastik_fuer_Informatiker.pdf:47,in,de,paraphrase
+What does it mean for an estimator to be unbiased?,StoSta,"slides3.pdf:49,53|Stochastik_fuer_Informatiker.pdf:85",in,en,paraphrase
+"Wie hängen MSE, Bias und Varianz eines Schätzers zusammen?",StoSta,slides3.pdf:53,in,de,abbrev
+How do you get the stationary distribution of an irreducible Markov chain?,StoSta,"slides4.pdf:35,37|Stochastik_fuer_Informatiker.pdf:108",in,en,paraphrase
+Wie hoch war die Sensitivität des 14-3-3-Tests im Creutzfeldt-Jakob-Beispiel?,StoSta,slides1.pdf:37|Stochastik_fuer_Informatiker.pdf:24|blatt-02-sol.pdf:1,in,de,fact
+"Wie berechne ich die Wahrscheinlichkeit, dass mindestens eines von drei Ereignissen eintritt?",StoSta,"slides1.pdf:22|Stochastik_fuer_Informatiker.pdf:17,18|formelsammlung_sus.pdf:2",in,de,paraphrase
+What does the central limit theorem say?,StoSta,"slides2.pdf:103,106|Stochastik_fuer_Informatiker.pdf:145|formelsammlung_sus.pdf:21",in,en,paraphrase
+Wie kann man die Varianz einfacher ausrechnen als über die Definition?,StoSta,"slides2.pdf:93|Stochastik_fuer_Informatiker.pdf:64,137|formelsammlung_sus.pdf:9,20",in,de,paraphrase
+Was besagt die Ungleichung von Tschebyscheff?,StoSta,"slides2.pdf:98|Stochastik_fuer_Informatiker.pdf:65|blatt-07-sol-2.pdf:2,3",in,de,term
+What is the formula for the least squares estimator in linear regression?,StoSta,"slides5.pdf:2,3,7|Stochastik_fuer_Informatiker.pdf:180,185",in,en,paraphrase
+"Wie bekomme ich P(B|A), wenn ich P(A|B) kenne?",StoSta,"slides1.pdf:32,33|Stochastik_fuer_Informatiker.pdf:23",in,de,paraphrase
+Wofür steht SE und wie wird es beim ML-Schätzer berechnet?,StoSta,"slides3.pdf:30,31|Stochastik_fuer_Informatiker.pdf:82|formelsammlung_sus.pdf:13",in,de,abbrev
+When are two events conditionally independent given a third event?,StoSta,slides1.pdf:46|Stochastik_fuer_Informatiker.pdf:30,in,en,paraphrase
+Wer hat die Fußball-WM 2014 gewonnen?,,,out,de,offtopic
+What is the capital of Australia?,,,out,en,offtopic
+Wie funktioniert der Dijkstra-Algorithmus?,,,out,de,near-miss
+How does masked language modeling work when pretraining BERT?,,,out,en,near-miss
+Wie führt man einen t-Test für zwei unabhängige Stichproben durch?,,,out,de,near-miss
+Was ist ein Rot-Schwarz-Baum?,,,out,de,near-miss
+How does the Diffie-Hellman key exchange work?,,,out,en,near-miss
+Wie funktioniert Gradient Boosting?,,,out,de,near-miss

@@ -1,0 +1,48 @@
+question,type,course,lang,kind,rank,top1_score,top1_rerank,top1_hit
+Warum heißt das Skip-gram-Modell eigentlich Skip-gram?,in,CLA,de,paraphrase,1,0.6258,1.5016,cla26_w8_01_word2vec_Skipgram.pdf p.14
+How are the negative examples generated when training skip-gram with negative sampling?,in,CLA,en,paraphrase,2,0.7214,0.7212,cla26_w8_01_word2vec_Skipgram.pdf p.48
+"Wie kann fastText einen Vektor für ein Wort erzeugen, das im Training nie vorkam?",in,CLA,de,paraphrase,1,0.6231,1.9947,cla26_w8_03_fastText.pdf p.12
+Which training points actually decide where an SVM puts its decision boundary?,in,CLA,en,paraphrase,2,0.6472,0.9287,cla26_w4_03_SVM.pdf p.4
+"Was passiert mit der Margin, wenn ich den Hyperparameter C bei der SVM groß wähle?",in,CLA,de,paraphrase,1,0.6188,0.0727,cla26_w4_03_SVM.pdf p.13
+Why do deep networks with sigmoid activations stop learning?,in,CLA,en,paraphrase,1,0.6034,0.8873,cla26_w11_01_NN.pdf p.15
+"Wie ändert der Perzeptron-Algorithmus die Gewichte, wenn ein Beispiel falsch klassifiziert wurde?",in,CLA,de,paraphrase,1,0.6490,2.2595,cla26_w1_04_perceptron.pdf p.34
+When should I use t-SNE instead of PCA to visualize word embeddings?,in,CLA,en,paraphrase,1,0.6102,0.1092,cla26_w8_02_visualization.pdf p.10
+Was macht das Forget Gate in einem LSTM?,in,CLA,de,term,1,0.6919,1.0868,cla26_w11_02_RNN.pdf p.21
+Bis wann muss man die Moodle-Aufgaben in CLA abgeben?,in,CLA,de,fact,2,0.6806,0.7232,cla26_w1_01_organizational.pdf p.6
+How is n-gram overlap different from plain word overlap for detecting paraphrases?,in,CLA,en,paraphrase,3,0.6414,0.4176,cla26_w2_01_paraphrasing.pdf p.6
+"Wie berechnet man, wie ähnlich sich zwei Wortvektoren sind?",in,CLA,de,paraphrase,1,0.7009,1.5293,cla26_w5_01_SemanticSpace.pdf p.37
+Was ist SGNS?,in,CLA,de,abbrev,1,0.4114,0.1196,cla26_w7_01_SVD.pdf p.64
+Welche Laufzeit hat der CYK-Algorithmus?,in,FSK,de,term,1,0.6566,0.8202,skript-4.pdf p.76
+Is the Ackermann function primitive recursive?,in,FSK,en,paraphrase,1,0.7541,1.4267,skript-4.pdf p.138
+Was besagt der Satz von Rice?,in,FSK,de,term,1,0.6380,1.1179,vl-10b-ft-reduktion-und-der-satz-von-rice.pdf p.10
+How is the special halting problem K defined?,in,FSK,en,paraphrase,1,0.8188,1.4896,vl-10a-ft-unentscheidbarkeit-und-das-spezielle-halteproblem.pdf p.12
+"Woran erkennt man laut Myhill-Nerode, ob eine Sprache regulär ist?",in,FSK,de,paraphrase,2,0.6564,0.8526,vl-05a-f-der-satz-von-myhill-und-nerode-2.pdf p.10
+Wie macht man aus einem NFA einen DFA?,in,FSK,de,paraphrase,1,0.6399,0.7414,vl-03b-ft-determinisierung-von-endlichen-automaten.pdf p.6
+How many states can the DFA end up with after determinizing an NFA with n states?,in,FSK,en,paraphrase,1,0.6231,0.2190,vl-03b-ft-determinisierung-von-endlichen-automaten.pdf p.13
+Welche Form müssen die Regeln einer Grammatik in Chomsky-Normalform haben?,in,FSK,de,paraphrase,1,0.7503,1.4681,skript-4.pdf p.61
+What is the formal definition of a pushdown automaton?,in,FSK,en,paraphrase,1,0.5909,0.5224,vl-06c-ft-kellerautomaten-3.pdf p.6
+Wie ist die Komplexitätsklasse NP definiert?,in,FSK,de,term,1,0.6675,0.3809,vl-11a-ft-laufzeitkomplexitaet-und-die-klassen-p-und-np-3.pdf p.13
+Which problem was the first one proven NP-complete by Cook?,in,FSK,en,paraphrase,1,0.4895,0.2368,skript-4.pdf p.165
+Was ist das PCP?,in,FSK,de,abbrev,1,0.6698,0.8610,vl-10c-ft-das-postsche-korrespondenzproblem.pdf p.4
+Welche Bedingung müssen die Regeln einer Typ-3-Grammatik erfüllen?,in,FSK,de,term,1,0.6958,0.6470,vl-01c-ft-weitere-grammatikbegriffe-sowie-eigenschaften-von-sprachen.pdf p.4
+Wann darf man die Binomialverteilung durch eine Poisson-Verteilung annähern?,in,StoSta,de,paraphrase,1,0.6837,0.3606,slides2.pdf p.39
+What does it mean for an estimator to be unbiased?,in,StoSta,en,paraphrase,1,0.5359,-0.6627,slides3.pdf p.49
+"Wie hängen MSE, Bias und Varianz eines Schätzers zusammen?",in,StoSta,de,abbrev,1,0.8616,0.9648,slides3.pdf p.53
+How do you get the stationary distribution of an irreducible Markov chain?,in,StoSta,en,paraphrase,1,0.6417,1.6473,slides4.pdf p.37
+Wie hoch war die Sensitivität des 14-3-3-Tests im Creutzfeldt-Jakob-Beispiel?,in,StoSta,de,fact,1,0.6670,1.7163,slides1.pdf p.37
+"Wie berechne ich die Wahrscheinlichkeit, dass mindestens eines von drei Ereignissen eintritt?",in,StoSta,de,paraphrase,,0.6446,0.1053,Stochastik_fuer_Informatiker.pdf p.9
+What does the central limit theorem say?,in,StoSta,en,paraphrase,1,0.6209,0.8469,slides2.pdf p.103
+Wie kann man die Varianz einfacher ausrechnen als über die Definition?,in,StoSta,de,paraphrase,1,0.6968,0.3814,formelsammlung_sus.pdf p.9
+Was besagt die Ungleichung von Tschebyscheff?,in,StoSta,de,term,1,0.5723,0.6763,slides2.pdf p.98
+What is the formula for the least squares estimator in linear regression?,in,StoSta,en,paraphrase,1,0.6242,0.8192,Stochastik_fuer_Informatiker.pdf p.180
+"Wie bekomme ich P(B|A), wenn ich P(A|B) kenne?",in,StoSta,de,paraphrase,,0.5802,1.0935,Stochastik_fuer_Informatiker.pdf p.22
+Wofür steht SE und wie wird es beim ML-Schätzer berechnet?,in,StoSta,de,abbrev,1,0.6946,0.7773,slides3.pdf p.31
+When are two events conditionally independent given a third event?,in,StoSta,en,paraphrase,4,0.6810,0.7178,slides1.pdf p.40
+Wer hat die Fußball-WM 2014 gewonnen?,out,,de,offtopic,,0.2613,-1.0561,slides2.pdf p.130
+What is the capital of Australia?,out,,en,offtopic,,0.1754,-2.9646,slides5.pdf p.10
+Wie funktioniert der Dijkstra-Algorithmus?,out,,de,near-miss,,0.6046,-1.2766,vl-09c-f-primitiv-und-my-rekursive-funktionen.pdf p.11
+How does masked language modeling work when pretraining BERT?,out,,en,near-miss,,0.5111,-1.2378,cla26_w5_01_SemanticSpace.pdf p.26
+Wie führt man einen t-Test für zwei unabhängige Stichproben durch?,out,,de,near-miss,,0.6045,-1.1696,Stochastik_fuer_Informatiker.pdf p.78
+Was ist ein Rot-Schwarz-Baum?,out,,de,near-miss,,0.4237,-0.9361,slides2.pdf p.123
+How does the Diffie-Hellman key exchange work?,out,,en,near-miss,,0.4339,-2.4481,Kapitel_3_Transport.pdf p.37
+Wie funktioniert Gradient Boosting?,out,,de,near-miss,,0.4622,-0.4778,cla26_w11_01_NN.pdf p.22
