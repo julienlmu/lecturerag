@@ -24,14 +24,41 @@ The system has two pipelines: an offline ingestion pipeline and an online query 
 
 **Query** (`query.py`, `app.py`):
 1. The user's question is embedded with the same model.
-2. The top 5 most similar chunks are retrieved from Qdrant, optionally filtered to a specific course using an indexed payload field.
-3. The retrieved chunks are assembled into a prompt with strict instructions to answer only from the sources and cite them by number.
-4. Google Gemini generates the answer, which is displayed with expandable source cards. Each card can show the original PDF page, fetched from cloud storage.
+2. The 20 most similar chunks are retrieved from Qdrant, optionally filtered to a specific course using an indexed payload field.
+3. A multilingual cross-encoder (`jina-reranker-v2-base-multilingual`) reads the question and each candidate chunk together and re-sorts them. The top 5 are kept.
+4. If even the best chunk scores below a minimum reranker score, the app answers "I couldn't find this in your notes." directly, without calling the LLM.
+5. Otherwise the top 5 chunks are assembled into a prompt with strict instructions to answer only from the sources and cite them by number.
+6. Google Gemini generates the answer, which is displayed with expandable source cards. Each card can show the original PDF page, fetched from cloud storage.
+
+## Evaluation
+
+Retrieval quality is measured with a hand-labeled test set (`eval/testset.csv`): 47 questions in German and English, 39 answerable across three courses and 8 that the notes cannot answer (off-topic and near-miss topics). For each answerable question, every page that contains the answer is labeled, since the same content often appears in slides, lecture script and formula sheet.
+
+`eval/eval_retrieval.py` checks whether a correct page is among the retrieved chunks, without calling the LLM, so a run is cheap and deterministic.
+
+| | Vector search | + Reranking |
+|---|---|---|
+| Hit@1 | 41.0% | 79.5% |
+| Hit@5 (what the LLM sees) | 69.2% | **94.9%** |
+| MRR@10 | 0.545 | **0.861** |
+
+- The baseline's main failure was ordering: in most misses the correct page was retrieved, but on rank 6 to 10. Reranking the top 20 fixes most of these.
+- The remaining misses are formula-heavy slides, where `pypdf` text extraction loses most of the content.
+- The minimum reranker score (−1.0) refuses <!-- X --> of 8 unanswerable questions and none of the 39 answerable ones. Reranker scores separate the two groups far better than cosine similarity, which made a reliable threshold possible.
+
+The test set is small (13 questions per course), so per-course and per-language numbers are indicative only.
+
+```bash
+python eval/eval_retrieval.py --tag baseline          # vector search only
+python eval/eval_retrieval.py --rerank --tag rerank   # with reranking + threshold table
+python eval/eval_retrieval.py --list-files            # indexed files per course
+```
 
 ## Tech stack
 
 - **Language:** Python 3.13
 - **Embeddings:** [fastembed](https://github.com/qdrant/fastembed) with `paraphrase-multilingual-MiniLM-L12-v2` (384 dimensions, runs locally, no API cost)
+- **Reranking:** fastembed cross-encoder with `jinaai/jina-reranker-v2-base-multilingual` (runs locally)
 - **Vector database:** [Qdrant Cloud](https://qdrant.tech/) with payload indexing for course filtering
 - **LLM:** [Google Gemini 2.5 Flash](https://aistudio.google.com/)
 - **PDF storage:** [Supabase Storage](https://supabase.com/) (public bucket, serves original PDFs to the viewer)
@@ -40,9 +67,10 @@ The system has two pipelines: an offline ingestion pipeline and an online query 
 
 ## Features
 
-- Semantic retrieval across a multi-course corpus (currently ~2,900 chunks from four courses).
+- Semantic retrieval with cross-encoder reranking across a multi-course corpus (93 PDFs from four courses).
 - Multi-course filtering backed by Qdrant payload indexes.
-- Grounded answers with inline citations and honest "not found in your notes" behavior.
+- Grounded answers with inline citations and honest "not found in your notes" behavior, enforced by a reranker score threshold and the prompt.
+- Retrieval evaluation with a labeled test set, run before and after every change.
 - Inline PDF viewer: click a source to see the exact cited page rendered in the app.
 - Graceful handling of LLM rate limits and transient errors.
 - Minimal UI with example questions.
@@ -83,20 +111,24 @@ python ingest.py Rechnernetze pdfs/Rechnernetze/Kapitel_3_Transport.pdf
 streamlit run app.py
 ```
 
+The first query downloads the embedding model (~0.25 GB) and the reranker (~1.1 GB) from Hugging Face. `fastembed` is pinned in `requirements.txt` so that ingestion and queries always use the same embedding behavior.
+
 ## Project structure
 
 ```
 lecturerag/
-├── app.py            # Streamlit UI, query orchestration, PDF viewer
-├── query.py          # embedding, retrieval, prompt building
-├── ingest.py         # PDF -> chunks -> embeddings -> Qdrant
-├── upload_pdfs.py    # bulk-upload local PDFs to Supabase Storage
+├── app.py                  # Streamlit UI, query orchestration, PDF viewer
+├── query.py                # embedding, retrieval, reranking, threshold, prompt building
+├── ingest.py               # PDF -> chunks -> embeddings -> Qdrant
+├── upload_pdfs.py          # bulk-upload local PDFs to Supabase Storage
+├── eval/
+│   ├── testset.csv         # labeled questions with correct file/page per answer
+│   └── eval_retrieval.py   # Hit@k, MRR, breakdowns, threshold table
 ├── requirements.txt
 ├── .env.example
 └── .streamlit/
-    └── config.toml   # theme
+    └── config.toml         # theme
 ```
-
 
 ## License
 
