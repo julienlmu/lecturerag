@@ -37,7 +37,7 @@ from qdrant_client import QdrantClient
 # Make the project root importable so we evaluate the real search function.
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from query import COLLECTION_NAME, EMBED_MODEL, RERANK_CANDIDATES, rerank, search_chunks  # noqa: E402
+from query import COLLECTION_NAME, EMBED_MODEL, MIN_RERANK_SCORE, RERANK_CANDIDATES, rerank, search_chunks  # noqa: E402
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="fastembed")
@@ -204,6 +204,17 @@ def main() -> None:
         print("\nTop-1 rerank score (different scale, use this for a threshold when reranking):")
         print(f"  in-scope      {describe(in_scope, 'top1_rerank')}")
         print(f"  out-of-scope  {describe(out_scope, 'top1_rerank')}")
+
+        # --- Minimum-score gate: what would each threshold block? ---
+        def blocked(group, t):
+            return sum(1 for r in group if r["top1_rerank"] is not None and r["top1_rerank"] < t)
+
+        print(f"\nMinimum-score gate (current MIN_RERANK_SCORE = {MIN_RERANK_SCORE}):")
+        print("  threshold | answerable wrongly refused | unanswerable correctly refused")
+        for t in sorted({-2.0, -1.5, -1.0, -0.75, -0.5, 0.0, MIN_RERANK_SCORE}):
+            mark = "  <- current" if t == MIN_RERANK_SCORE else ""
+            print(f"  {t:9.2f} | {blocked(in_scope, t):>2}/{len(in_scope):<24}"
+                  f"| {blocked(out_scope, t):>2}/{len(out_scope)}{mark}")
 
     # --- Misses, to inspect by hand ---
     misses = [r for r in in_scope if not hit5(r)]

@@ -22,6 +22,10 @@ EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 TOP_K = 5  # how many chunks go into the prompt
 RERANK_MODEL = "jinaai/jina-reranker-v2-base-multilingual"  # German + English
 RERANK_CANDIDATES = 20  # how many chunks the vector search hands to the reranker
+# Below this reranker score for the best chunk, we answer "not found" without calling the LLM.
+# Chosen on eval/testset.csv: answerable questions scored >= -0.66, off-topic ones mostly below -1.0.
+MIN_RERANK_SCORE = -1.0
+NOT_FOUND_MESSAGE = "I couldn't find this in your notes."
 
 _reranker: TextCrossEncoder | None = None
 
@@ -92,6 +96,11 @@ def rerank(question: str, sources: list[dict], top_k: int = TOP_K) -> list[dict]
     return sorted(sources, key=lambda s: s["rerank_score"], reverse=True)[:top_k]
 
 
+def is_answerable(sources: list[dict], min_score: float = MIN_RERANK_SCORE) -> bool:
+    """True if the best reranked chunk is relevant enough to answer from."""
+    return bool(sources) and sources[0].get("rerank_score", float("inf")) >= min_score
+
+
 def build_prompt(question: str, sources: list[dict]) -> str:
     """Build a prompt that includes the question and numbered sources."""
     
@@ -137,6 +146,9 @@ def answer_question(question: str, course: str | None = None) -> tuple[str, list
     )
     candidates = search_chunks(qdrant, query_vector, course=course, limit=RERANK_CANDIDATES)
     sources = rerank(question, candidates)
+
+    if not is_answerable(sources):
+        return NOT_FOUND_MESSAGE, []
 
     prompt = build_prompt(question, sources)
 
