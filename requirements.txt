@@ -1,5 +1,6 @@
+
 fastembed==0.8.0
-google-genai==2.3.0
+groq==1.7.0
 langchain-text-splitters==1.1.2
 pypdf==6.11.0
 python-dotenv==1.2.2

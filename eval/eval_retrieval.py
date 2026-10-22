@@ -44,7 +44,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="fastembed")
 
 load_dotenv(ROOT / ".env")
 
-HIT_KS = (1, 3, 5)  # Hit@5 matters most: the app sends the top 5 chunks to Gemini.
+HIT_KS = (1, 3, 5)  # Hit@5 matters most: the app sends the top 5 chunks to the LLM.
 
 
 def parse_relevant(spec: str) -> set[tuple[str, int]]:

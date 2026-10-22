@@ -3,17 +3,24 @@ Query the indexed lecture notes.
 Usage: python query.py "What is the TCP three-way handshake?"
 """
 import os
+import re
 import sys
+from functools import lru_cache
+from io import BytesIO
+
+import requests
+from pypdf import PdfReader
 from dotenv import load_dotenv
 
 from fastembed import TextEmbedding
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
-from google import genai
+from groq import Groq
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="fastembed")
+warnings.filterwarnings("ignore", message=".*mean pooling.*")  # known, checked: ingest and query use the same version
 
 load_dotenv()
 
@@ -27,13 +34,29 @@ RERANK_CANDIDATES = 20  # how many chunks the vector search hands to the reranke
 MIN_RERANK_SCORE = -1.0
 NOT_FOUND_MESSAGE = "I couldn't find this in your notes."
 
+# Small-to-big: we search on small chunks, but give the LLM the whole page each chunk came from,
+# so definitions split across two chunks still arrive complete.
+MAX_PAGE_CHARS = 3000  # cap per page (long script pages), keeps tokens per question predictable
+
+# LLM that writes the answer (Groq free tier: 30 req/min, 1K req/day, 8K tokens/min, 200K tokens/day).
+LLM_MODEL = "openai/gpt-oss-120b"
+LLM_REASONING_EFFORT = "low"  # gpt-oss is a reasoning model; summarising 5 chunks needs little thinking
+
+_embedder: TextEmbedding | None = None
 _reranker: TextCrossEncoder | None = None
+
+
+def get_embedder() -> TextEmbedding:
+    """Load the embedding model once per process instead of on every question."""
+    global _embedder
+    if _embedder is None:
+        _embedder = TextEmbedding(model_name=EMBED_MODEL)
+    return _embedder
 
 
 def embed_query(question: str) -> list[float]:
     """Embed a single question. Returns one vector."""
-    embedder= TextEmbedding(model_name=EMBED_MODEL)
-    vectors = list(embedder.embed([question]))
+    vectors = list(get_embedder().embed([question]))
     return vectors[0].tolist()
 
 
@@ -96,6 +119,70 @@ def rerank(question: str, sources: list[dict], top_k: int = TOP_K) -> list[dict]
     return sorted(sources, key=lambda s: s["rerank_score"], reverse=True)[:top_k]
 
 
+def unique_pages(ranked: list[dict], max_pages: int = TOP_K) -> list[dict]:
+    """
+    Keep only the best-ranked chunk per (file, page), in rank order, up to max_pages.
+    Two chunks from the same page would otherwise become two sources with duplicate content.
+    """
+    seen, pages = set(), []
+    for src in ranked:
+        key = (src["filename"], src["page"])
+        if key not in seen:
+            seen.add(key)
+            pages.append(src)
+        if len(pages) == max_pages:
+            break
+    return pages
+
+
+@lru_cache(maxsize=32)
+def _load_pdf(url: str) -> PdfReader | None:
+    """Download a PDF once per process and keep the parsed reader in memory."""
+    try:
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        return PdfReader(BytesIO(response.content))
+    except Exception as e:
+        print(f"Could not load PDF {url}: {type(e).__name__}: {e}")
+        return None
+
+
+def _page_window(page_text: str, chunk_text: str, max_chars: int = MAX_PAGE_CHARS) -> str:
+    """Return the whole page, or a max_chars window centred on the chunk if the page is long."""
+    if len(page_text) <= max_chars:
+        return page_text
+    idx = page_text.find(chunk_text[:100])
+    if idx == -1:
+        return page_text[:max_chars]
+    start = max(0, min(idx + len(chunk_text) // 2 - max_chars // 2, len(page_text) - max_chars))
+    return page_text[start:start + max_chars]
+
+
+def attach_page_texts(sources: list[dict]) -> list[dict]:
+    """
+    Add "page_text" to every source: the full text of its PDF page (same pypdf extraction as ingest).
+    Falls back to the chunk text if the PDF cannot be loaded.
+    """
+    for src in sources:
+        reader = _load_pdf(src["pdf_url"]) if src.get("pdf_url") else None
+        text = ""
+        if reader is not None and 0 < src["page"] <= len(reader.pages):
+            text = reader.pages[src["page"] - 1].extract_text() or ""
+        src["page_text"] = _page_window(text, src["text"]) if text.strip() else src["text"]
+    return sources
+
+
+def retrieve(client: QdrantClient, question: str, course: str | None = None) -> list[dict]:
+    """
+    Vector search (top RERANK_CANDIDATES chunks) -> rerank all of them -> best chunk per page, top TOP_K pages.
+    Returns sources sorted by rerank score; page texts are attached separately, only if we answer.
+    """
+    query_vector = embed_query(question)
+    candidates = search_chunks(client, query_vector, course=course, limit=RERANK_CANDIDATES)
+    ranked = rerank(question, candidates, top_k=len(candidates))
+    return unique_pages(ranked)
+
+
 def is_answerable(sources: list[dict], min_score: float = MIN_RERANK_SCORE) -> bool:
     """True if the best reranked chunk is relevant enough to answer from."""
     return bool(sources) and sources[0].get("rerank_score", float("inf")) >= min_score
@@ -127,38 +214,50 @@ Sources:
     
     source_lines = []
     for i, src in enumerate(sources, 1):
-        source_lines.append(f"[{i}] (page {src['page']}, {src['filename']}): {src['text']}")
+        text = src.get("page_text", src["text"])
+        source_lines.append(f"[{i}] (page {src['page']}, {src['filename']}): {text}")
     sources_block = "\n".join(source_lines)
     
     return instructions + sources_block + f"\n\nQuestion: {question}"
 
 
+def clean_answer(text: str) -> str:
+    """Normalise model-specific formatting so the UI renders it correctly."""
+    text = re.sub(r"【(\d+)[^】]*】", r"[\1]", text)              # 【1】 / 【1†L3】 -> [1]
+    text = re.sub(r"\\\((.+?)\\\)", r"$\1$", text)                # \( x \) -> $x$
+    text = re.sub(r"\\\[(.+?)\\\]", r"$$\1$$", text, flags=re.S)  # \[ x \] -> $$x$$
+    return text
+
+
+def generate(prompt: str) -> str:
+    """Send the prompt to the LLM and return the answer text. The only place that talks to the LLM provider."""
+    client = Groq(api_key=os.environ["GROQ_API_KEY"])
+    response = client.chat.completions.create(
+        model=LLM_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,  # deterministic answers, better for evaluation
+        reasoning_effort=LLM_REASONING_EFFORT,
+    )
+    return clean_answer(response.choices[0].message.content or "")
+
+
 def answer_question(question: str, course: str | None = None) -> tuple[str, list[dict]]:
     """
-    Full pipeline: embed question, search, build prompt, call LLM, return answer.
+    Full pipeline: retrieve and rerank, threshold, expand to full pages, build prompt, call LLM.
     Returns (answer_text, sources_used).
     """
-    query_vector = embed_query(question)
-
     qdrant = QdrantClient(
         url=os.environ["QDRANT_URL"],
         api_key=os.environ["QDRANT_API_KEY"],
     )
-    candidates = search_chunks(qdrant, query_vector, course=course, limit=RERANK_CANDIDATES)
-    sources = rerank(question, candidates)
+    sources = retrieve(qdrant, question, course=course)
 
     if not is_answerable(sources):
         return NOT_FOUND_MESSAGE, []
 
+    attach_page_texts(sources)
     prompt = build_prompt(question, sources)
-
-    gemini = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    response = gemini.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
-
-    return response.text, sources
+    return generate(prompt), sources
 
 
 def main(question: str, course: str | None = None):

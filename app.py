@@ -9,8 +9,9 @@ from dotenv import load_dotenv
 import streamlit as st
 from qdrant_client import QdrantClient
 
-from query import embed_query, search_chunks, build_prompt, rerank, RERANK_CANDIDATES
-from google import genai
+from query import (
+    retrieve, is_answerable, attach_page_texts, build_prompt, generate, NOT_FOUND_MESSAGE,
+)
 
 load_dotenv()
 
@@ -139,7 +140,7 @@ st.markdown("""
 <div class="hero-title">📚 LectureRAG</div>
 <div class="hero-accent"></div>
 <div class="hero-subtitle">Ask questions about your lecture notes — get answers grounded in cited sources.</div>
-<div class="hero-meta">First query takes ~30s while the embedding model loads · Built with Python, Qdrant, fastembed, Gemini</div>
+<div class="hero-meta">First query takes a while after a restart while the models load · Built with Python, Qdrant, fastembed, reranking, GPT-OSS via Groq</div>
 """, unsafe_allow_html=True)
 
 
@@ -199,7 +200,7 @@ with st.sidebar:
     st.markdown("## About")
     st.caption(
         "A retrieval-augmented Q&A app for university lecture notes. "
-        "Built with Python, Qdrant, fastembed, and Google Gemini."
+        "Built with Python, Qdrant, fastembed, a cross-encoder reranker and GPT-OSS via Groq."
     )
     st.markdown(
         "[View on GitHub →](https://github.com/julienlmu/lecturerag)",
@@ -247,38 +248,29 @@ ask_clicked = st.button("Ask", type="primary", use_container_width=False)
 # --- Handle the Ask button click ---
 if ask_clicked and question:
     with st.spinner("Searching your notes..."):
-        query_vector = embed_query(question)
-
         qdrant = QdrantClient(
             url=os.environ["QDRANT_URL"],
             api_key=os.environ["QDRANT_API_KEY"],
         )
-        candidates = search_chunks(qdrant, query_vector, course= course_filter, limit=RERANK_CANDIDATES)
-        sources = rerank(question, candidates)
+        sources = retrieve(qdrant, question, course=course_filter)
 
+        # Nothing relevant enough: answer directly, no LLM call, no sources shown.
+        if not is_answerable(sources):
+            st.markdown('<div class="section-label">Answer</div>', unsafe_allow_html=True)
+            st.write(NOT_FOUND_MESSAGE)
+            st.stop()
+
+        attach_page_texts(sources)  # the LLM gets whole pages, not just the matched chunks
         prompt = build_prompt(question, sources)
 
-        gemini = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
         try:
-            response = gemini.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
-            answer = response.text
+            answer = generate(prompt)
         except Exception as e:
-            error_type = type(e).__name__
-            if "ServerError" in error_type or "503" in str(e) or "500" in str(e):
-                msg = (
-                    "The language model is temporarily unavailable " 
-                    "(likely a rate limit on the free tier). Please wait ~30 seconds and try again."
-                )
-            elif "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                msg = (
-                    "Rate limit reached on the free tier. "
-                    "Please wait a minute before asking another question."
-                )
+            print(f"LLM error: {e!r}")  # full error in the terminal / Streamlit log
+            if "429" in str(e) or "rate limit" in str(e).lower():
+                msg = "Rate limit reached on the free tier. Please wait a minute and try again."
             else:
-                msg = f"Something went wrong calling the language model: {error_type}."
+                msg = f"Something went wrong calling the language model: {type(e).__name__}."
             st.warning(msg)
             st.stop()
 
